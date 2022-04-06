@@ -143,6 +143,7 @@ CREATE TABLE flow_subflows (
     sbfl_work_started     TIMESTAMP WITH TIME ZONE,
     sbfl_has_events       VARCHAR2(200 CHAR),
     sbfl_reservation      VARCHAR2(255 CHAR),
+    sbfl_task_ownership   VARCHAR2(4000 BYTES),
     sbfl_last_update      TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
@@ -243,6 +244,9 @@ ALTER TABLE flow_subflows
     ADD CONSTRAINT sbfl_prcs_fk FOREIGN KEY ( sbfl_prcs_id )
         REFERENCES flow_processes ( prcs_id )
             ON DELETE CASCADE;
+
+ALTER TABLE flow_subflows
+    ADD CONSTRAINT sbfl_task_ownership_json CHECK ( sbfl_task_ownership IS JSON );
 
 ALTER TABLE flow_timers
     ADD CONSTRAINT timr_prcs_fk FOREIGN KEY ( timr_prcs_id )
