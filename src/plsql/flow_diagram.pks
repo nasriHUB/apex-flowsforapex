@@ -6,7 +6,8 @@
 --
 -- Created 10-Dec-2021  Dennis Amthor - MT AG  
 --
-*/create or replace package flow_diagram
+*/
+create or replace package flow_diagram
   authid definer
 as
 
