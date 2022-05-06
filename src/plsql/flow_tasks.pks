@@ -1,5 +1,5 @@
 create or replace package flow_tasks
-accessible by (flow_engine)
+accessible by (flow_engine, flow_engine_util)
 as  
 
   procedure process_task
@@ -32,5 +32,11 @@ as
   , p_step_info     in flow_types_pkg.flow_step_info
   );
 
+  procedure cancel_apex_task
+  ( p_process_id    in flow_processes.prcs_id%type
+  , p_objt_bpmn_id  in flow_objects.objt_bpmn_id%type
+  , p_apex_task_id  in number    
+  );
+  
 end flow_tasks;
 /

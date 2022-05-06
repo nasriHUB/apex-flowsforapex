@@ -11,6 +11,41 @@ begin
 
   insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
   values (
+  'apex-task-cancelation-error',
+  'en',
+  'Error attempting to cancel APEX workflow task (task_id: %1 ) for process step : %0.)'
+  );
+  
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  values (
+  'apex-task-not-supported',
+  'en',
+  'APEX Workflow Feature use requires Oracle APEX v%0.'
+  );
+
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  values (
+  'apex-task-not-found',
+  'en',
+  'APEX Workflow Task %0 not found in Flows for APEX Process'
+  );
+  
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  values (
+  'apex-task-on-multiple-steps',
+  'en',
+  'APEX Workflow Task %0 found associated with more than one Fows for APEX process step.'
+  );
+
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  values (
+  'apex-task-not-current-step',
+  'en',
+  'APEX Workflow Task %0 is not the current step of the Process.  Step may have completed all ready.'
+  );
+  
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  values (
   'ITE-unsupported-type',
   'en',
   'Currently unsupported type of Intermediate Throw Event encountered at %0 .'

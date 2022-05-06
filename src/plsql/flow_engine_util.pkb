@@ -172,6 +172,35 @@ procedure get_number_of_connections
     ;
   end get_number_of_connections;
 
+  function get_object_vc_attribute
+  ( p_objt_bpmn_id      in flow_objects.objt_bpmn_id%type
+  , p_dgrm_id           in flow_diagrams.dgrm_id%type  
+  , p_attribute_key     in flow_object_attributes.obat_vc_value%type
+  , p_exception_on_null in boolean default false
+  )
+  return varchar2
+  is
+    l_obat_value  flow_object_attributes.obat_vc_value%type;
+  begin
+    select obat.obat_vc_value
+      into l_obat_value
+      from flow_object_attributes obat
+      join flow_objects objt
+        on obat.obat_objt_id = objt.objt_id
+     where objt.objt_bpmn_id = p_objt_bpmn_id
+       and objt.objt_dgrm_id = p_dgrm_id
+       and obat.obat_vc_value = p_attribute_key
+       ;
+    return l_obat_value;
+  exception
+    when no_data_found then
+      if p_exception_on_null then
+        raise;
+      else
+        return null;
+      end if;
+  end get_object_vc_attribute;
+
   function get_object_subtag
   ( p_objt_bpmn_id in flow_objects.objt_bpmn_id%type
   , p_dgrm_id      in flow_diagrams.dgrm_id%type  
@@ -420,6 +449,7 @@ procedure get_number_of_connections
     , p_process_level in flow_subflows.sbfl_process_level%type
     )
   is
+    l_apex_task_id  number;
   begin
     apex_debug.enter
     ( 'terminate_level'
@@ -443,7 +473,43 @@ procedure get_number_of_connections
         , p_process_level  => child_proc_levels.sbfl_process_level);
       end loop;
     end;
-    -- end all subflows in the level
+    -- end all subflows in this level
+$IF NOT FLOW_APEX_ENV.VER_LE_21_2  
+$THEN
+    -- if running on APEX 22.1 or above
+    -- first check if any subflows have current tasks that running external tasks, e,g., APEX approvals
+    begin
+      for subflows_with_tasks in (
+        select sbfl.sbfl_id
+             , sbfl.sbfl_current
+             , sbfl.sbfl_scope
+             , objt.objt_tag_name
+             , objt.objt_sub_tag_name
+          from flow_subflows sbfl
+          join flow_objects objt
+            on sbfl.sbfl_dgrm_id = objt.objt_dgrm_id
+         where sbfl.sbfl_prcs_id = p_process_id
+           and sbfl.sbfl_process_level = p_process_level
+           and objt.objt_tag_name = flow_constants_pkg.gc_bpmn_usertask
+           and objt.objt_sub_tag_name = flow_constants_pkg.gc_apex_usertask_apex_approval
+      )
+      loop
+        -- get apex taskID
+        l_apex_task_id := flow_proc_vars_int.get_var_num
+                            ( pi_prcs_id   => p_process_id
+                            , pi_var_name  => subflows_with_tasks.sbfl_current||flow_constants_pkg.gc_prov_suffix_task_id
+                            , pi_scope     => subflows_with_tasks.sbfl_scope
+                            );
+        -- cancel apex workflow task
+        flow_tasks.cancel_apex_task
+        ( p_process_id    => p_process_id
+        , p_objt_bpmn_id  => subflows_with_tasks.sbfl_current
+        , p_apex_task_id  => l_apex_task_id
+        );
+      end loop;
+    end;
+$END 
+    -- then delete the subflows
     delete from flow_subflows
     where sbfl_process_level = p_process_level 
       and sbfl_prcs_id = p_process_id

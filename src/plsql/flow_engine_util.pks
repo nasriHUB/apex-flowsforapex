@@ -23,6 +23,13 @@ as
     p_value      in flow_configuration.cfig_value%type
   );
 
+  function get_object_vc_attribute
+  ( p_objt_bpmn_id      in flow_objects.objt_bpmn_id%type
+  , p_dgrm_id           in flow_diagrams.dgrm_id%type  
+  , p_attribute_key     in flow_object_attributes.obat_vc_value%type
+  , p_exception_on_null in boolean default false
+  ) return varchar2;
+
   function get_object_tag
   ( p_objt_bpmn_id in flow_objects.objt_bpmn_id%type
   , p_dgrm_id      in flow_diagrams.dgrm_id%type  

@@ -2,6 +2,41 @@ PROMPT >> reset Engine Messages to intial state (French)
 begin
   delete from flow_messages where fmsg_lang = 'fr';
 
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'apex-task-cancelation-error',
+  'fr',
+  'Error attempting to cancel APEX workflow task (task_id: %1 ) for process step : %0.)'
+  );
+    
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'apex-task-not-supported',
+  'fr',
+  'APEX Workflow Feature use requires Oracle APEX v%0.'
+  );
+
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
+  values (
+  'apex-task-not-found',
+  'fr',
+  'APEX Workflow Task %0 not found in Flows for APEX Process'
+  );
+  
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
+  values (
+  'apex-task-on-multiple-steps',
+  'fr',
+  'APEX Workflow Task %0 found associated with more than one Fows for APEX process step.'
+  );
+
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
+  values (
+  'apex-task-not-current-step',
+  'fr',
+  'APEX Workflow Task %0 is not the current step of the Process.  Step may have completed all ready.'
+  );
+  
   insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
   values (
   'ITE-unsupported-type',
@@ -329,35 +364,35 @@ begin
   'Les minuteurs pour le processus %0 sont verrouillés par un autre utilisateur. Veuillez réessayer ultérieurement.'
   );
   
-  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
   values (
   'var-set-error',
   'fr',
   'Erreur de création de la variable de processus %0 pour l''ID de processus %1 avec la portée %2.'
   );
   
-  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
   values (
   'var-get-error',
   'fr',
   'Erreur de récupération de la variable de processus %0 pour l''ID de processus %1 avec la portée %2.'
   );
   
-  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
   values (
   'var-update-error',
   'fr',
   'Erreur de mise à jour de la variable de processus %0 pour l''ID de processus %1 avec la portée %2.'
   );
   
-  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
   values (
   'var-delete-error',
   'fr',
   'Erreur de suppression de la variable de processus %0 pour l''ID de processus %1 avec la portée %2.'
   );
   
-  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )-- NEEDS TRANSLATION
   values (
   'var-lock-error',
   'fr',

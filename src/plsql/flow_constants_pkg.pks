@@ -70,7 +70,9 @@ as
   -- APEX Extensions to BPMN
   -- userTask
   gc_apex_usertask_apex_page          constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'apexPage';
+  gc_apex_usertask_apex_approval      constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'apexApproval';
   gc_apex_usertask_external_url       constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'externalUrl';
+
 
   gc_apex_usertask_application_id     constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'applicationId';
   gc_apex_usertask_page_id            constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'pageId';
@@ -83,6 +85,14 @@ as
   gc_apex_usertask_value              constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'itemValue';
 
   gc_apex_usertask_url                constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'url';
+
+  gc_apex_usertask_static_id          constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'taskStaticId';
+  gc_apex_usertask_subject            constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'subject';
+  gc_apex_usertask_business_ref       constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'businessRef';
+  gc_apex_usertask_task_comment       constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'taskComment';
+  gc_apex_usertask_parameters         constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'parameters';
+
+
 
   --serviceTask
   gc_apex_servicetask_send_mail       constant flow_types_pkg.t_bpmn_id := gc_apex_prefix || 'sendMail';
@@ -200,6 +210,12 @@ as
   -- Standard Process Variables
 
   gc_prov_builtin_business_ref        constant  varchar2(50 char) := 'BUSINESS_REF';
+
+  -- Standard Process Variable Suffixes
+
+  gc_prov_suffix_task_id              constant  varchar2(50 char) := ':task_id';
+  gc_prov_suffix_result               constant  varchar2(50 char) := ':result';
+  gc_prov_suffix_route                constant  varchar2(50 char) := ':route';   -- not yet used
 
   -- Process Variable Expression Types
   gc_expr_type_static                 constant flow_types_pkg.t_expr_type := 'static';
