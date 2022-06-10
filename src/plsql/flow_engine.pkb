@@ -4,7 +4,8 @@
 -- (c) Copyright Oracle Corporation and / or its affiliates, 2022.
 -- (c) Copyright MT AG, 2020-2022.
 --
--- Created 11-Sep-2020  Richard Allen (Flowquest) 
+-- Created  11-Sep-2020  Richard Allen (Flowquest)
+-- Modified 30-May-2022  Moritz Klein (MT AG)
 --
 */
 create or replace package body flow_engine
@@ -186,17 +187,11 @@ end flow_process_link_event;
       -- check for Terminate sub-Event
       if p_step_info.target_objt_subtag = flow_constants_pkg.gc_bpmn_terminate_event_definition then
         -- get desired process status after termination from model
-        begin
-          select coalesce(obat.obat_vc_value, flow_constants_pkg.gc_prcs_status_completed)
-            into l_process_end_status
-            from flow_object_attributes obat
-          where obat.obat_objt_id = p_step_info.target_objt_id
-            and obat.obat_key = flow_constants_pkg.gc_terminate_result
-          ;
-        exception
-          when no_data_found then
-            l_process_end_status := flow_constants_pkg.gc_prcs_status_completed;
-        end;
+        select coalesce( objt.objt_attributes."processStatus", flow_constants_pkg.gc_prcs_status_completed )
+          into l_process_end_status
+          from flow_objects objt
+         where objt.objt_id = p_step_info.target_objt_id
+        ;
         -- terminate the main level
         flow_engine_util.terminate_level
         ( 
@@ -299,10 +294,12 @@ end flow_process_link_event;
   , p_step_info     in flow_types_pkg.flow_step_info
   )
   is 
-    l_par_sbfl    flow_types_pkg.t_subflow_context;
+    l_par_sbfl            flow_types_pkg.t_subflow_context;
+    l_injected_step_key   flow_subflows.sbfl_step_key%type;
+    l_is_interrupting     boolean;
   begin
-    -- currently only supports none Intermediate throw event (used as a process state marker)
-    -- but this might later have a case type = timer, message, etc. ....
+    -- currently  supports none, link, and escalation Intermediate throw event 
+    -- but this might later have other case type =  message throw, etc. ....
     apex_debug.enter 
     ( 'process_IntermediateThrowEvent'
     , 'p_step_info.target_objt_ref', p_step_info.target_objt_ref
@@ -340,7 +337,7 @@ end flow_process_link_event;
       , p_step_info  => p_step_info
       );   
     elsif p_step_info.target_objt_subtag = flow_constants_pkg.gc_bpmn_escalation_event_definition then
-      -- make the ITE the current event
+      -- make the ITE the current step
       update  flow_subflows sbfl
           set sbfl.sbfl_current = p_step_info.target_objt_ref
             , sbfl.sbfl_last_completed = p_sbfl_info.sbfl_current
@@ -349,18 +346,22 @@ end flow_process_link_event;
         where sbfl.sbfl_id = p_sbfl_info.sbfl_id
           and sbfl.sbfl_prcs_id = p_sbfl_info.sbfl_prcs_id
       ;
-      -- get the subProcess event in the parent level
+      -- find the subProcess event in the parent level
       l_par_sbfl := flow_engine_util.get_subprocess_parent_subflow
       ( p_process_id => p_sbfl_info.sbfl_prcs_id
       , p_subflow_id => p_sbfl_info.sbfl_id
       , p_current => p_step_info.target_objt_ref
       );
       -- escalate it to the boundary Event
-      flow_boundary_events.process_boundary_event
-      ( p_sbfl_info     => p_sbfl_info
-      , p_step_info     => p_step_info
-      , p_par_sbfl      => l_par_sbfl.sbfl_id
+      flow_boundary_events.process_escalation
+      ( pi_sbfl_info        => p_sbfl_info
+      , pi_step_info        => p_step_info
+      , pi_par_sbfl         => l_par_sbfl.sbfl_id
+      , pi_source_type      => flow_constants_pkg.gc_bpmn_intermediate_throw_event
+      , po_step_key         => l_injected_step_key
+      , po_is_interrupting  => l_is_interrupting
       ); 
+
     else 
       --- other type of intermediateThrowEvent that is not currently supported
       flow_errors.handle_instance_error
@@ -682,12 +683,13 @@ begin
                                   , flow_constants_pkg.gc_bpmn_task 
                                   , flow_constants_pkg.gc_bpmn_usertask
                                   , flow_constants_pkg.gc_bpmn_manualtask
+                                  , flow_constants_pkg.gc_bpmn_call_activity
                                   )   -- add any objects that can support timer boundary events here
           -- if any of these events have a timer on them, it must be an interrupting timer.
           -- because non-interupting timers are set on the boundary event itself
     then
-      -- we have an interrupting boundary event
-      flow_boundary_events.handle_interrupting_boundary_event 
+      -- we have an interrupting timer boundary event
+      flow_boundary_events.handle_interrupting_timer 
       ( p_process_id => p_process_id
       , p_subflow_id => p_subflow_id
       );
@@ -785,9 +787,10 @@ begin
   end if;
   -- clean up any boundary events left over from the previous activity
   if (p_current_step_tag in ( flow_constants_pkg.gc_bpmn_subprocess
-                              , flow_constants_pkg.gc_bpmn_task
-                              , flow_constants_pkg.gc_bpmn_usertask
-                              , flow_constants_pkg.gc_bpmn_manualtask
+                            , flow_constants_pkg.gc_bpmn_call_activity
+                            , flow_constants_pkg.gc_bpmn_task
+                            , flow_constants_pkg.gc_bpmn_usertask
+                            , flow_constants_pkg.gc_bpmn_manualtask
                             ) -- boundary event attachable types
       and p_sbfl_rec.sbfl_has_events is not null )            -- subflow has events attached
   then
@@ -851,6 +854,8 @@ begin
          , objt_target.objt_bpmn_id
          , objt_target.objt_tag_name    
          , objt_target.objt_sub_tag_name
+         , objt_lane.objt_bpmn_id
+         , objt_lane.objt_name
       into l_step_info
       from flow_connections conn
       join flow_objects objt_source
@@ -862,12 +867,14 @@ begin
       join flow_subflows sbfl
         on sbfl.sbfl_current = objt_source.objt_bpmn_id 
        and sbfl.sbfl_dgrm_id = conn.conn_dgrm_id
+ left join flow_objects objt_lane
+        on objt_target.objt_objt_lane_id = objt_lane.objt_id
+       and objt_target.objt_dgrm_id = objt_lane.objt_dgrm_id
      where conn.conn_tag_name = flow_constants_pkg.gc_bpmn_sequence_flow
        and conn.conn_bpmn_id like nvl2( p_forward_route, p_forward_route, '%' )
        and sbfl.sbfl_prcs_id = p_process_id
        and sbfl.sbfl_id = p_subflow_id
     ;
-    return l_step_info;
   exception
     when no_data_found then
       flow_errors.handle_instance_error
@@ -898,6 +905,7 @@ begin
       );
       -- $F4AMESSAGE 'eng_handle_event_int' || 'Flow Engine Internal Error: Process %0 Subflow %1 Module %2 Current %4 Current Tag %3'
   end;
+  return l_step_info;
 end get_next_step_info;
 
 function get_restart_step_info
@@ -925,11 +933,16 @@ begin
          , objt_current.objt_bpmn_id
          , objt_current.objt_tag_name    
          , objt_current.objt_sub_tag_name
+         , objt_lane.objt_bpmn_id
+         , objt_lane.objt_name
       into l_step_info
       from flow_objects objt_current
       join flow_subflows sbfl
         on sbfl.sbfl_current = objt_current.objt_bpmn_id 
        and sbfl.sbfl_dgrm_id = objt_current.objt_dgrm_id
+ left join flow_objects objt_lane
+        on objt_current.objt_objt_lane_id = objt_lane.objt_id
+       and objt_current.objt_dgrm_id = objt_lane.objt_dgrm_id
      where sbfl.sbfl_prcs_id = p_process_id
        and sbfl.sbfl_id = p_subflow_id
        and sbfl.sbfl_current = p_current_bpmn_id
@@ -984,9 +997,23 @@ begin
   , p0 => p_sbfl_rec.sbfl_id
   , p1 => p_sbfl_rec.sbfl_last_completed
   , p2 => p_sbfl_rec.sbfl_prcs_id
-  );    
-
-  -- evaluate and set any on-event variable expressions from the timer object
+  );   
+  --  Set status to waiting and reschedule the timer with current time.
+      update flow_subflows sbfl
+         set sbfl.sbfl_last_update = systimestamp
+           , sbfl.sbfl_status = flow_constants_pkg.gc_sbfl_status_waiting_timer
+       where sbfl.sbfl_id = p_sbfl_rec.sbfl_id
+         and sbfl.sbfl_prcs_id = p_sbfl_rec.sbfl_prcs_id
+      ;
+      flow_timers_pkg.reschedule_timer
+      ( 
+        p_process_id       => p_sbfl_rec.sbfl_prcs_id
+      , p_subflow_id      => p_sbfl_rec.sbfl_id
+      , p_step_key     => p_sbfl_rec.sbfl_step_key
+      , p_is_immediate  => true
+      , p_comment       => 'Restart Immediate Broken Timer'
+      );
+  /*-- evaluate and set any on-event variable expressions from the timer object
   flow_expressions.process_expressions
     ( pi_objt_id     => p_step_info.target_objt_id
     , pi_set         => flow_constants_pkg.gc_expr_set_on_event
@@ -1003,13 +1030,16 @@ begin
     , pi_sbfl_id => p_sbfl_rec.sbfl_id
     );
   else
-    -- step forward onto next step
+  /*  -- step forward onto next step
     flow_complete_step
     ( p_process_id => p_sbfl_rec.sbfl_prcs_id
     , p_subflow_id => p_sbfl_rec.sbfl_id
     , p_step_key   => p_sbfl_rec.sbfl_step_key
     );
-  end if;
+    -- reschedule  timer to fire in next step cycle
+
+
+  end if;*/
 
 end restart_failed_timer_step;
 
@@ -1246,20 +1276,37 @@ begin
     , p_subflow_id => p_subflow_id
     , p_forward_route => p_forward_route
     );
+ 
+    if not flow_globals.get_step_error then
+      -- complete the current step by doing the post-step operations
+      finish_current_step
+      ( p_sbfl_rec => l_sbfl_rec
+      , p_current_step_tag => l_step_info.source_objt_tag
+      , p_log_as_completed => p_log_as_completed
+      );
+    else
+      rollback;
+      if p_recursive_call then
+        -- set error status on instance and subflow
+        flow_errors.set_error_status
+        ( pi_prcs_id => p_process_id
+        , pi_sbfl_id => p_subflow_id
+        );
+      end if;
+      apex_debug.info
+      ( p_message => 'Subflow %0 : Step End Rollback due to earlier Error on Step %1'
+      , p0        => p_subflow_id
+      , p1        => l_sbfl_rec.sbfl_current
+      );      
 
-    -- complete the current step by doing the post-step operations
-    finish_current_step
-    ( p_sbfl_rec => l_sbfl_rec
-    , p_current_step_tag => l_step_info.source_objt_tag
-    , p_log_as_completed => p_log_as_completed
-    );
+    end if;
   end if; -- step key valid
 
   -- end of post-step operations for previous step
   if flow_globals.get_step_error then
     rollback;
     if p_recursive_call then
-      -- set errort status on instance and subflow
+      -- set error status on instance and subflow
       flow_errors.set_error_status
       ( pi_prcs_id => p_process_id
       , pi_sbfl_id => p_subflow_id
@@ -1285,6 +1332,8 @@ begin
         , sbfl.sbfl_status = flow_constants_pkg.gc_sbfl_status_running
         , sbfl.sbfl_work_started = null
         , sbfl.sbfl_last_update = l_timestamp
+        , sbfl.sbfl_lane      = coalesce( l_step_info.target_objt_lane     , sbfl.sbfl_lane     , null)
+        , sbfl.sbfl_lane_name = coalesce( l_step_info.target_objt_lane_name, sbfl.sbfl_lane_name, null)
     where sbfl.sbfl_prcs_id = p_process_id
       and sbfl.sbfl_id = p_subflow_id
     ;

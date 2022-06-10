@@ -43,7 +43,41 @@ begin
   'fr',
   'Type d''événement de lancer intermédiaire actuellement non pris en charge rencontré à %0.'
   );
-  
+      
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'async-invalid-params',
+  'fr',
+  'Unable to create asyncronous connection for object %0.  Username not valid in specified Application'
+  );
+
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'apex-session-params-not-set',
+  'fr',
+  'Async connection details for object %0 need to be set in process variables, diagram async connection details, or system config details.'
+  );
+   
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'async-no-username',
+  'fr',
+  'Unable to create asyncronous connection for object %0.  Username needs to be specified in process variable, the process diagram, or system configuration.'
+  );
+    
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'async-no-appid',
+  'fr',
+  'Unable to create asyncronous connection for object %0.  Application ID needs to be specified in process variable, the process diagram, or system configuration.'
+  );
+      
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'async-no-pageid',
+  'fr',
+  'Unable to create asyncronous connection for object %0.  Page ID needs to be specified in process variable, the process diagram, or system configuration.'
+  );
   insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )
   values (
   'boundary-event-child-lock-to',
@@ -258,6 +292,13 @@ begin
   'start-already-running',
   'fr',
   'Vous avez essayé de démarrer un processus (id %0) qui est déjà en cours d''exécution.'
+  );
+    
+  insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content ) -- NEEDS TRANSLATION
+  values (
+  'start-diagram-calls-itself',
+  'fr',
+  'You tried to start a process with a diagram %0 that includes a callActivity calling itself.'
   );
   
   insert into flow_messages( fmsg_message_key, fmsg_lang, fmsg_message_content )

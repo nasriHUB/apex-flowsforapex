@@ -10,6 +10,7 @@ PROMPT >> Installing Package Specifications
 @plsql/flow_types_pkg.pks
 @plsql/flow_constants_pkg.pks
 @plsql/flow_migrate_xml_pkg.pks
+@plsql/flow_parser_util.pks
 @plsql/flow_bpmn_parser_pkg.pks
 @plsql/flow_api_pkg.pks
 @plsql/flow_engine_util.pks
@@ -26,6 +27,7 @@ PROMPT >> Installing Package Specifications
 @plsql/flow_expressions.pks
 @plsql/flow_usertask_pkg.pks
 @plsql/flow_plsql_runner_pkg.pks
+@plsql/flow_apex_session.pks
 @plsql/flow_subprocesses.pks
 @plsql/flow_call_activities.pks
 @plsql/flow_logging.pks
@@ -59,10 +61,12 @@ PROMPT >> Installing Package Bodies
 @plsql/flow_engine.pkb
 @plsql/flow_api_pkg.pkb
 @plsql/flow_migrate_xml_pkg.pkb
+@plsql/flow_parser_util.pkb
 @plsql/flow_bpmn_parser_pkg.pkb
 @plsql/flow_timers_pkg.pkb
 @plsql/flow_usertask_pkg.pkb
 @plsql/flow_plsql_runner_pkg.pkb
+@plsql/flow_apex_session.pkb
 @plsql/flow_subprocesses.pkb
 @plsql/flow_call_activities.pkb
 @plsql/flow_logging.pkb
